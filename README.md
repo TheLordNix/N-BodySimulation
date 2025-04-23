@@ -1,5 +1,6 @@
 # N-BodySimulation(WIP)
 Made using raylib and c++
+<br>
 Features to add/edit
 1) Better physics for simulation (Velocity Verlet or RK4 (Runge-Kutta 4))
 2) Set more predefined solar systems etc? Edit the "orbital speed" function as well
