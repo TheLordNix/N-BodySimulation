@@ -10,3 +10,4 @@ Made using raylib and c++
 6) Speed values displayed break at higher values (?)
 7) ** ADD COLLISIONS
 8) Show preview of new planet being dragged and dropped as well
+9) Add particle trails to show speed effect?
