@@ -56,27 +56,29 @@ int main()
     sun.SetX(0);
     sun.SetY(0);
     sun.SetSpeedY(0);
+    sun.SetColor(YELLOW);
     planets.push_back(sun);
 
     // Lambda to add other planets
-    auto addPlanet = [&](double distance, double mass, double radius, double speedY) {
+    auto addPlanet = [&](double distance, double mass, double radius, double speedY, Color color) {
         Planet p;
         p.SetMass(mass);
         p.SetRadius(radius);
         p.SetX(distance);
         p.SetY(0);
         p.SetSpeedY(speedY);
+        p.SetColor(color);
         planets.push_back(p);
     };
 
-    addPlanet(5.79e10, 3.30e23, 6, 4.79e4);   // Mercury
-    addPlanet(1.08e11, 4.87e24, 10, 3.50e4);  // Venus
-    addPlanet(1.50e11, 5.97e24, 12, 2.98e4);  // Earth
-    addPlanet(2.28e11, 6.42e23, 10, 2.41e4);  // Mars
-    addPlanet(7.78e11, 1.90e27, 25, 1.31e4);  // Jupiter
-    addPlanet(1.43e12, 5.68e26, 22, 9.7e3);   // Saturn
-    addPlanet(2.87e12, 8.68e25, 18, 6.8e3);   // Uranus
-    addPlanet(4.50e12, 1.02e26, 18, 5.4e3);   // Neptune
+    addPlanet(5.79e10, 3.30e23, 6, 4.79e4, GRAY);    // Mercury
+    addPlanet(1.08e11, 4.87e24, 10, 3.50e4, ORANGE); // Venus
+    addPlanet(1.50e11, 5.97e24, 12, 2.98e4, GREEN);   // Earth
+    addPlanet(2.28e11, 6.42e23, 10, 2.41e4, RED);    // Mars
+    addPlanet(7.78e11, 1.90e27, 25, 1.31e4, BROWN);  // Jupiter
+    addPlanet(1.43e12, 5.68e26, 22, 9.7e3, BEIGE);   // Saturn
+    addPlanet(2.87e12, 8.68e25, 18, 6.8e3, BLUE); // Uranus
+    addPlanet(4.50e12, 1.02e26, 18, 5.4e3, DARKBLUE);  // Neptune
 
     float deltaTime = 3600 * 10;
     float simulationSpeed = deltaTime / 3600.0f;
@@ -93,11 +95,18 @@ int main()
     {
         Vector2 mousePosition = GetMousePosition();
 
+        if (IsKeyPressed(KEY_G)) Planet::showGlow = !Planet::showGlow;
+        if (IsKeyPressed(KEY_T)) Planet::showTrails = !Planet::showTrails;
+        if (IsKeyPressed(KEY_S)) Planet::showShadows = !Planet::showShadows;
+        if (IsKeyPressed(KEY_R)) Planet::showRings = !Planet::showRings;
+
         Rectangle speedUpButton = { screenWidth - 140, screenHeight - 50, 60, 40 };
         Rectangle speedDownButton = { screenWidth - 70, screenHeight - 50, 60, 40 };
         Rectangle toggleAddPlanetUIBox = { screenWidth - 300, 10, 280, 40 };
         Rectangle planetDisplayBox = { screenWidth - 300, 60, 280, 280 };
         Rectangle orbitalSpeedButton = { planetDisplayBox.x, planetDisplayBox.y + planetDisplayBox.height + 110, 150, 40 };
+
+        // Input
 
         if (!isSliding && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
             if (CheckCollisionPointRec(mousePosition, speedUpButton)) {
@@ -117,12 +126,16 @@ int main()
 
         simulationSpeed = deltaTime / 3600.0f;
 
+        // Camera movement
+
         if (!isDragging && !isSliding && (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) || IsMouseButtonDown(MOUSE_BUTTON_LEFT))) {
             Vector2 delta = Vector2Subtract(mousePosition, lastMousePosition);
             camera.target = Vector2Subtract(camera.target, Vector2Scale(delta, 1.0f / camera.zoom));
         }
 
         lastMousePosition = mousePosition;
+
+        // Camera zoom
 
         float scroll = GetMouseWheelMove();
         if (scroll != 0) {
@@ -135,6 +148,8 @@ int main()
             Vector2 zoomDelta = Vector2Subtract(mouseWorldPos, afterZoomWorldPos);
             camera.target = Vector2Add(camera.target, zoomDelta);
         }
+
+        // Add planet UI
 
         if (showAddPlanetUI && !isSliding) {
             if (!isDragging && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
@@ -170,6 +185,8 @@ int main()
             }
         }
 
+        // Planet update
+
         for (auto& planet : planets) {
             planet.Update(planets, deltaTime);
         }
@@ -179,6 +196,37 @@ int main()
 
         BeginMode2D(camera);
 
+        // GRID
+        float baseGridSpacing = 100.0f; 
+        float gridSpacing = baseGridSpacing;
+
+        while (gridSpacing * camera.zoom < baseGridSpacing) {
+            gridSpacing *= 2.0f; 
+        }
+        while (gridSpacing * camera.zoom > baseGridSpacing * 2.0f) {
+            gridSpacing /= 2.0f; 
+        }
+
+        Vector2 centerWorld = GetScreenToWorld2D({ screenWidth / 2.0f, screenHeight / 2.0f }, camera);
+
+        float startX = std::floor(centerWorld.x / gridSpacing) * gridSpacing;
+        float startY = std::floor(centerWorld.y / gridSpacing) * gridSpacing;
+
+        for (float x = startX; x <= centerWorld.x + (screenWidth / 2.0f) / camera.zoom; x += gridSpacing) {
+            DrawLine(x, centerWorld.y - (screenHeight / 2.0f) / camera.zoom, x, centerWorld.y + (screenHeight / 2.0f) / camera.zoom, LIGHTGRAY);
+        }
+        for (float x = startX; x >= centerWorld.x - (screenWidth / 2.0f) / camera.zoom; x -= gridSpacing) {
+            DrawLine(x, centerWorld.y - (screenHeight / 2.0f) / camera.zoom, x, centerWorld.y + (screenHeight / 2.0f) / camera.zoom, LIGHTGRAY);
+        }
+
+        for (float y = startY; y <= centerWorld.y + (screenHeight / 2.0f) / camera.zoom; y += gridSpacing) {
+            DrawLine(centerWorld.x - (screenWidth / 2.0f) / camera.zoom, y, centerWorld.x + (screenWidth / 2.0f) / camera.zoom, y, LIGHTGRAY);
+        }
+        for (float y = startY; y >= centerWorld.y - (screenHeight / 2.0f) / camera.zoom; y -= gridSpacing) {
+            DrawLine(centerWorld.x - (screenWidth / 2.0f) / camera.zoom, y, centerWorld.x + (screenWidth / 2.0f) / camera.zoom, y, LIGHTGRAY);
+        }
+
+        // Planet Draw
         ClearBackground(darkGreen);
         for (const auto& planet : planets) {
             planet.Draw();
@@ -189,6 +237,8 @@ int main()
         }
 
         EndMode2D();
+
+        // UI TEXT
 
         DrawText(TextFormat("Zoom: %.2fx", camera.zoom), 10, 10, 20, DARKGRAY);
 
